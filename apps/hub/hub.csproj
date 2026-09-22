@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>   <!-- Terminal.Gui 2.5 only targets net10.0 -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>hub</AssemblyName>
+    <RootNamespace>Hub</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui" Version="2.5.0" />
+  </ItemGroup>
+
+  <!--
+    Stamp the build time and git commit into the binary (shown on the About tab, also printed by the app when run with the about flag).
+    Runs on every build, so a plain `dotnet build` is enough. A repo with no commits yet gets "none";
+    "dirty" means there were uncommitted changes anywhere in the repo when it was built.
+  -->
+  <Target Name="StampBuildInfo" BeforeTargets="CoreCompile">
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; rev-parse --short=12 HEAD 2&gt;/dev/null || true"
+          ConsoleToMSBuild="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_HubCommit" />
+    </Exec>
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; status --porcelain 2&gt;/dev/null | head -n 1 || true"
+          ConsoleToMSBuild="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_HubDirtyRaw" />
+    </Exec>
+    <PropertyGroup>
+      <_HubCommit Condition="'$(_HubCommit)' == ''">none</_HubCommit>
+      <_HubDirty Condition="'$(_HubDirtyRaw)' != ''">true</_HubDirty>
+      <_HubDirty Condition="'$(_HubDirty)' == ''">false</_HubDirty>
+      <_HubBuiltUtc>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</_HubBuiltUtc>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)BuildInfo.g.cs" Overwrite="true" Lines="// &lt;auto-generated/&gt;;namespace Hub%3B;internal static class BuildInfo { public const string BuiltUtc = &quot;$(_HubBuiltUtc)&quot;%3B public const string Commit = &quot;$(_HubCommit)&quot;%3B public const bool Dirty = $(_HubDirty)%3B }" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)BuildInfo.g.cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>

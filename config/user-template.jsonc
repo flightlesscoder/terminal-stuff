@@ -1,0 +1,21 @@
+// Your personal terminal-stuff config. This is layered ON TOP of config/default.jsonc (see
+// config/README.md): objects merge key by key, arrays are CONCATENATED. So leave an array here
+// empty (or delete the key) unless you actually want to ADD entries to what default.jsonc
+// already has -- copying its contents here would duplicate every entry, not override them.
+{
+  // Extra rows for the hub app's Settings > Paths tab, appended after the built-in ones.
+  // "path" may use ${REPO} (this repo's root) and ${HOME}.
+  "paths": [
+    // { "name": "Work notes", "path": "${HOME}/notes" }
+  ],
+
+  // Leave these empty to keep default.jsonc's tmux2k segments (session/git/cwd left;
+  // cpu/ram/storage/volume/battery/network/time right). The hub app's Status Segments tab
+  // writes your actual choice into ~/.config/terminal-stuff/config.jsonc directly -- if you're
+  // editing this by hand instead, put your FULL desired list here (not just additions), since
+  // reordering isn't something "append" can express.
+  "tmux": {
+    "statusLeft": [],
+    "statusRight": []
+  }
+}

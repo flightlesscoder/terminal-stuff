@@ -1,0 +1,7 @@
+{
+  "obsidian-accent": {
+    "description": "Obsidian vault accent color (Settings > Appearance > Accent color), set by setup/tui/modules/obsidian.py's APPEARANCE_JSON",
+    "rgb": [242, 92, 245],
+    "hex": "#f25cf5"
+  }
+}

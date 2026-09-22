@@ -1,0 +1,22 @@
+# Private / machine-specific / work-specific material stays out of the public repo.
+# See "Private overrides" in README.md.
+*.local
+*.private
+.private/
+local/
+secrets/
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.claude/settings.local.json
+
+# setup TUI
+logs/
+__pycache__/
+*.pyc
+apps/**/bin/
+apps/**/obj/

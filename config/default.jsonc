@@ -1,0 +1,29 @@
+// terminal-stuff's tracked default config. This file always exists and is always valid --
+// don't edit it to make personal changes (they'd show up in `git diff` and get overwritten by
+// pulls); see config/README.md for where personal/machine-specific overrides go instead.
+{
+  // Paths shown on the hub app's Settings > Paths tab. Extend this list from your own config
+  // instead of editing this file -- see config/README.md. ${REPO} and ${HOME} are substituted.
+  "paths": [
+    { "name": "Repo root", "path": "${REPO}" },
+    { "name": "Dotfiles", "path": "${REPO}/dotfiles" },
+    { "name": "Setup scripts", "path": "${REPO}/setup" },
+    { "name": "Apps", "path": "${REPO}/apps" },
+    { "name": "Logs", "path": "${REPO}/logs" },
+    { "name": "zshrc", "path": "${HOME}/.zshrc" },
+    { "name": "tmux.conf", "path": "${HOME}/.tmux.conf" },
+    { "name": "Neovim config", "path": "${HOME}/.config/nvim" },
+    { "name": "Hyper config", "path": "${HOME}/.hyper.js" },
+    { "name": "SSH config", "path": "${HOME}/.ssh/config" }
+  ],
+
+  // tmux2k status bar segments, left and right of the window list. Order here is display order;
+  // a segment not listed in either is off. Edit this from the hub app's Status Segments tab, or
+  // by hand. Available names are tmux2k's plugins/*.sh files (bandwidth, battery, cpu, cpu-temp,
+  // custom, cwd, docker, github, git, gpu, group, keyboard-layout, mise, network, ping, pomodoro,
+  // ram, session, storage, tdo, time, updates, uptime, volume, weather).
+  "tmux": {
+    "statusLeft": ["session", "git", "cwd"],
+    "statusRight": ["cpu", "ram", "storage", "volume", "battery", "network", "time"]
+  }
+}

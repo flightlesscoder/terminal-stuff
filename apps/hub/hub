@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Launcher for the Terminal Stuff Hub TUI. Used by the tmux-which-key menu (prefix + Space, h) and
+# runnable directly. Keeps the window open with a message if the app isn't built or crashes, because
+# a tmux window would otherwise vanish before you could read why.
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+dll="$here/bin/hub.dll"
+
+# tmux windows may start with a thin PATH; add the usual dotnet/brew locations.
+for p in /home/linuxbrew/.linuxbrew/bin /opt/homebrew/bin /usr/local/bin "$HOME/.dotnet"; do
+  [ -d "$p" ] && case ":$PATH:" in *":$p:"*) ;; *) PATH="$PATH:$p" ;; esac
+done
+
+pause() { printf '\n%s\n' "$1"; read -r -n 1 -s -p "press any key to close"; echo; }
+
+if ! command -v dotnet >/dev/null 2>&1; then
+  pause "hub needs the .NET SDK/runtime (dotnet not found). Run ./setup/setup.sh and pick the 'hub' module."
+  exit 1
+fi
+if [ ! -f "$dll" ]; then
+  pause "hub isn't built yet. Run ./setup/setup.sh and pick the 'hub' module (or: dotnet build apps/hub -c Release -o apps/hub/bin)."
+  exit 1
+fi
+
+export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+dotnet "$dll" "$@"
+rc=$?
+[ "$rc" -ne 0 ] && pause "hub exited with status $rc"
+exit "$rc"
