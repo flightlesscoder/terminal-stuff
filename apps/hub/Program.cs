@@ -33,6 +33,14 @@ catch (Jsonc.JsoncException e)
 }
 tabs.Add(StatusSegmentsTab.Create(repoRoot, home));
 tabs.Add(SpeechTab.Create(repoRoot, home));
+try
+{
+    tabs.Add(KittyThemeTab.Create(repoRoot, home));
+}
+catch (Exception e)
+{
+    tabs.Add(ErrorTab.Create("Kitty Theme", e.Message));
+}
 tabs.Add(SetupTab.Create(repoRoot, app));
 
 var hint = new Label

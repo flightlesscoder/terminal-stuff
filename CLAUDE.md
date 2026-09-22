@@ -323,6 +323,68 @@ on timeout won't all be swept the way a detached command's would -- fine for wha
 actually used for here (`chsh`, `tee >> /etc/shells`, `apt-get`/`dnf install`), none of which spawn
 stray long-lived orphans the way e.g. `nvim --headless` might.
 
+## Kitty themes (`themes/kitty/`) + the hub app's Kitty Theme tab
+
+Each `themes/kitty/<slug>/` is one selectable theme: `theme.json` (name/description, shown by the
+picker), `kitty.conf` (colors + tab bar only -- no `font_family`/`font_size`, those are set once by
+the tracked `dotfiles/kitty/kitty.conf` template, not per theme), and an optional `tab_bar.py` for
+a theme using `tab_bar_style custom`. Applying one means: splice `kitty.conf`'s content into
+`~/.kitty.local.conf` as a managed block (marker `kitty-theme`) -- already `include`d by the
+deployed kitty.conf -- and, if present, copy `tab_bar.py` verbatim to `~/.config/kitty/tab_bar.py`
+(kitty only ever looks for that file in its own config dir, never relative to whatever file
+included the theme, so it can't live inside the spliced block). See `themes/kitty/README.md`.
+
+**Two independent implementations, same as `jsonc.py`/`Jsonc.cs`** -- change one, change the
+other: `setup/tui/modules/kitty.py`'s `kitty-theme` step (applies `DEFAULT_KITTY_THEME` non-
+interactively for a fresh machine) and `apps/hub`'s `KittyThemeTab.cs` (interactive switching).
+The block-splice logic itself is shared on the C# side via the new `BlockFile.cs` (`EnsureBlock`/
+`ReadBlock`), a straight port of `Ctx.ensure_block`/`block_current`/`_splice`'s marker convention
+(`# >>> terminal-stuff:NAME >>>` ... `<<<`) -- there wasn't a marked-block editor on the Hub side
+before this (Jsonc.cs and SpeechScript.cs both do *targeted* text surgery on a different shape of
+file, not this "whole block" pattern), so this is a new small shared primitive, not a one-off.
+
+**Real bug hit building `KittyThemeTab.cs`'s Apply button**: after `Apply()` succeeds, refreshing
+the theme list's `ObservableCollection` (`.Clear()` + re-`.Add()` each label, so the new "applied"
+marker shows) fires the list's own `ValueChanged` -- which re-enters the same `Capture()` closure
+used for normal user selection and resets the tracked `selected` index to whatever the refresh
+lands on, *after* `Apply()` already ran correctly with the right value. Symptom: the status line
+and the list's `*` marker both showed the correct newly-applied theme, but the detail pane right
+next to it reverted to showing the *previous* selection's description -- because `ShowDetail(selected)`,
+called after the refresh, was reading the clobbered value. Same root shape as `StatusSegmentsTab.cs`'s
+documented `ListView.SelectedItem`-goes-null-after-focus-loss gotcha, but from a different trigger
+(refreshing the bound collection, not losing focus) -- catch: **snapshot the index you need
+*before* any call that might touch the list's own state, don't re-read a tracking variable that a
+side effect of your own code could have just changed.** Fixed by capturing `var i = selected;`
+before `Apply()`/`RefreshLabels()`, then using `i` throughout and re-asserting `selected = i`
+afterward (plus `list.SetSelection(i, false)` to keep the visual cursor in place too).
+
+**Synthwave Kat's tab shape wasn't guessed**: matching tmux2k's own separator meant reading the
+*actual bytes* of the live status bar (`tmux show-option -gv status-right` piped through a Python
+one-liner checking `ord(ch) > 0x2000`), not assuming from memory -- came back U+E0B2, the classic
+powerline hard-arrow (mirrored for right-alignment), confirming kitty's `tab_powerline_style angled`
+(not `slanted`, which the original Neon Synthwave theme used) was the actual match.
+
+## kitty's own shell integration was quietly overriding `cursor_shape` at the prompt
+
+Wanted: a solid filled cursor block while a kitty window has keyboard focus, a hollow outline
+while it doesn't -- matching tmux's own active/inactive-pane cursor behavior (`dotfiles/kitty/kitty.conf`
+now pins `cursor_shape_unfocused hollow` explicitly, even though it's already kitty's own default,
+so a future kitty version or a theme can't quietly change it without this file noticing).
+
+Hit for real while verifying that: a *focused* window's prompt showed a thin beam cursor, not the
+configured block, even though `cursor_shape block` was right there in the config. Root cause:
+`shell_integration enabled` (kitty's own zsh-integration feature -- jump-to-prompt, cwd tracking,
+etc.) also switches the cursor to a beam at the shell prompt as one of its features, silently
+overriding `cursor_shape` -- confirmed straight from kitty's own docs
+(`docs/shell-integration.rst`, the `no-cursor` keyword's description: "Turn off changing of the
+text cursor to a bar when editing shell command line"). Fixed by changing the value to
+`shell_integration no-cursor` (a space-separated list of the *disabled* individual features, not
+`enabled` plus `no-cursor` combined -- confirmed from the same doc: "By default, all integration
+features are enabled... set to a space separated list of these values" -- the no-X keywords are
+the whole value, not additions to "enabled"), which keeps every other shell-integration feature and
+only stops that one cursor override. Verified for real: launched two kitty windows side by side,
+screenshotted both together, one focused (solid pink block) and one not (hollow pink outline).
+
 ## Public repo hygiene
 
 - Never commit secrets, tokens, work hostnames, or employer-specific config.

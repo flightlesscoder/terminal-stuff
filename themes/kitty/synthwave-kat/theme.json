@@ -1,0 +1,4 @@
+{
+  "name": "Synthwave Kat",
+  "description": "Neon Synthwave's palette with tmux2k's own tab shape (angled powerline, matching U+E0B2 -- confirmed from the live status bar, not assumed) and a dark rose active-tab index number for contrast against the fuchsia. Custom tab_bar.py: powerline tabs + a live clock + a glyph prefix. Default theme for this project."
+}
