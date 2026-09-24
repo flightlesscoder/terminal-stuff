@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import List
 
 from ..core import Module
-from . import config, extras, hub, kitty, lazyvim_dev, neovim, node, obsidian, speech, terminal_env, tmux
+from . import ai_agents, config, extras, hub, kitty, lazyvim_dev, neovim, node, obsidian, speech, terminal_env, tmux
 
 
 def load_all() -> List[Module]:
@@ -12,4 +12,4 @@ def load_all() -> List[Module]:
     # lazyvim_dev after neovim: its steps assume neovim's LazyVim install already exists.
     return [config.build(), terminal_env.build(), tmux.build(), hub.build(), neovim.build(),
             node.build(), extras.build(), speech.build(), kitty.build(), lazyvim_dev.build(),
-            obsidian.build()]
+            obsidian.build(), ai_agents.build()]

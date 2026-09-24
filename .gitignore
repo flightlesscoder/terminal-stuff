@@ -3,7 +3,10 @@
 *.local
 *.private
 .private/
-local/
+# local/ keeps its directory (and this explanation) in git but none of its contents.
+local/*
+!local/.gitkeep
+!local/README.md
 secrets/
 .env
 .env.*
@@ -20,3 +23,4 @@ __pycache__/
 *.pyc
 apps/**/bin/
 apps/**/obj/
+node_modules/

@@ -25,5 +25,16 @@
   "tmux": {
     "statusLeft": ["session", "git", "cwd"],
     "statusRight": ["cpu", "ram", "storage", "volume", "battery", "network", "time"]
+  },
+
+  // terminal-stuff's MCP server (apps/mcp-server), wired into pi by the ai-agents setup module.
+  // enabledPlugins: which tool collections load (built-in ones in apps/mcp-server/plugins/, private
+  // ones in localPluginDir). Edit from the hub app's MCP Server tab; it writes this as {"$replace":
+  // [...]} in your own config so a removal really removes. pluginOptions is passed to a plugin as
+  // ctx.options, keyed by plugin name.
+  "mcp": {
+    "enabledPlugins": ["repo"],
+    "localPluginDir": "${REPO}/local/mcp-plugins",
+    "pluginOptions": {}
   }
 }

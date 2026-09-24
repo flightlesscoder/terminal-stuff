@@ -385,6 +385,31 @@ the whole value, not additions to "enabled"), which keeps every other shell-inte
 only stops that one cursor override. Verified for real: launched two kitty windows side by side,
 screenshotted both together, one focused (solid pink block) and one not (hollow pink outline).
 
+## AI agent tools: `ai-agents` module, `apps/mcp-server`, `local/`
+
+Opt-in: every `ai-agents` step is `default=False` (bare `--run ai-agents` selects nothing -- verified).
+`local/` is git-ignored *except* `.gitkeep`/`README.md` (`local/*` + `!` exceptions; a bare `local/`
+rule can't be negated). Private pi extensions go in `local/pi-custom/*.ts` (symlinked into
+`~/.pi/agent/extensions/` by `pi-custom-extensions`), private MCP plugins in `local/mcp-plugins/`.
+
+`apps/mcp-server` is plain Node ESM (no build step). A plugin is `<dir>/<name>/index.mjs` exporting
+`{description, tools:[{name, description, inputSchema?: (z)=>zodShape, handler(args, ctx)}]}`; tools are
+exposed as `<plugin>_<tool>`. Which plugins load = config `mcp.enabledPlugins` (hub's MCP Server tab writes it
+with `SetReplaceField`, like tmux segments). The server does **not** parse JSONC itself: it shells to
+`python3 -m tui.jsonc_cli mcp-config` (falls back to defaults) so `jsonc.py` stays the one parser for Node.
+`server.mjs --list-plugins` is what the hub tab and `ai-agents-verify` use. stdout is the protocol channel: log to stderr only.
+
+pi wiring: `mcp-pi-wire` merges a `terminal-stuff` entry (`directTools: true`) into `~/.pi/agent/mcp.json`
+(pi-mcp-adapter's file); `PI_CODING_AGENT_DIR` redirects both pi and these steps to a scratch dir.
+Verified end to end with a small local model (gemma-4-E4B via llama-server, CPU-only, throwaway port) driven
+through `pi -e <provider.ts> --mode json -p ...`: pi called `terminal-stuff_repo_list_modules` with args.
+
+Gotchas hit: Terminal.Gui `Label` treats the first `_` as a hotkey marker, mangling tool names -- set
+`HotKeySpecifier = new Rune(0xFFFF)` on labels showing them. `pi-install` runs `npm install -g` against the *real*
+global prefix even under a scratch `HOME`, so skip it in sandbox tests. tmux socket paths under the scratchpad
+are too long ("File name too long") -- use a short `TMUX_TMPDIR` like `/tmp/x`. `kill` of `llama-server` may need
+`-9`; check `ss -ltn` for the port after.
+
 ## Public repo hygiene
 
 - Never commit secrets, tokens, work hostnames, or employer-specific config.

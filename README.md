@@ -24,7 +24,8 @@ cd ~/projects/terminal-stuff
 | `dotfiles/`      | Config files that setup blocks `source` from `~/.zshrc`, `~/.tmux.conf`, etc. |
 | `logs/`          | Git-ignored, size-capped logs from setup runs.                               |
 | `config/`        | Layered JSONC config (`default.jsonc`, `user-template.jsonc`) -- see `config/README.md`.      |
-| `apps/`          | Small standalone programs. `apps/hub` is the tabbed, mouse-enabled TUI opened from the tmux menu. |
+| `apps/`          | Small standalone programs. `apps/hub` is the tabbed, mouse-enabled TUI opened from the tmux menu; `apps/mcp-server` is the pluggable MCP server (Node). |
+| `local/`         | Untracked private assets (`pi-custom/` pi extensions, `mcp-plugins/`). Only the folder itself is in git. |
 | `scripts/`       | Everyday utility scripts I want on my `PATH`.                                |
 | `tmux-plugins/`  | Custom-developed tmux plugins.                                               |
 | `nvim-plugins/`  | Custom-developed Neovim plugins.                                             |
@@ -135,6 +136,12 @@ wired into the zsh module yet -- this step only installs the binary.
 (never overwrites an existing one) and verifies it's executable, syntactically valid, and that a
 speech engine is available. See `apps/hub`'s Speech tab below for configuring it.
 
+**Module `ai-agents`** (opt-in -- every step defaults off, so a bare run selects nothing): installs the
+[pi coding agent](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) and your pi packages
+(`pi-web-access`, `pi-fff`, `pi-goal-x`, `pi-vcc`, `pi-mcp-adapter`, `pi-time-sense`), symlinks private pi
+extensions from `local/pi-custom/*.ts` into `~/.pi/agent/extensions/`, installs `apps/mcp-server`'s
+dependencies, and registers that server in pi's `~/.pi/agent/mcp.json`. `doctor.sh` reports the same.
+
 Verify steps are read-only and show `done ✔` once they pass (or why not).
 
 **Module `kitty`** (optional -- both steps default off in the TUI, only run if selected): install
@@ -184,6 +191,8 @@ where order+membership together are the point. See `config/README.md`. Parsed id
   engine's command-line arguments (shell-like quoting: `-v "Samantha (Enhanced)" -r 175`), toggle
   Mute (comments out the one line that actually speaks -- a harmless no-op, everything else still
   runs), and Test right from the tab.
+- **MCP Server**: see every plugin `apps/mcp-server` can load (built-in and private), toggle which are
+  enabled, and see whether pi is wired to it. Save writes `mcp.enabledPlugins` to your config; restart pi.
 - **Setup**: the same information `./setup/doctor.sh` reports (every module, every step, its
   current state), with the option to actually run any of it -- modules on the left, that module's
   steps on the right, a Dry Run checkbox, and Run Step / Run All Todo In Module, streaming live

@@ -5,12 +5,15 @@ doctor.sh and dotfiles/tmux/apply-status-segments.sh, without booting the whole 
 exits 0, or "ERROR: <message>" and exits 1. Resolves from the current working directory, same as
 jsonc.resolve() is documented to for "as it would load from the current directory".
 
+`mcp-config`: prints the resolved `mcp` config section as JSON (read by apps/mcp-server).
+
 `tmux-segments`: prints `TS_LEFT=...`/`TS_RIGHT=...` (space-separated segment names) for
 apply-status-segments.sh to `tmux set-option` with -- see that script and dotfiles/tmux/tmux.conf
 for why this needs to run on every tmux start, not just live from the hub app.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -51,9 +54,21 @@ def cmd_tmux_segments() -> int:
     return 0
 
 
+def cmd_mcp_config() -> int:
+    """Prints the resolved `mcp` section as JSON, for apps/mcp-server (lib/config.mjs)."""
+    try:
+        cfg, _used = jsonc.resolve(ROOT, Path.cwd(), Path.home())
+    except jsonc.JsoncError:
+        return 1                                          # server falls back to its own defaults
+    print(json.dumps(cfg.get("mcp", {})))
+    return 0
+
+
 def main() -> int:
     if sys.argv[1:2] == ["tmux-segments"]:
         return cmd_tmux_segments()
+    if sys.argv[1:2] == ["mcp-config"]:
+        return cmd_mcp_config()
     return cmd_check()
 
 

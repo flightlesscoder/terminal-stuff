@@ -41,6 +41,14 @@ catch (Exception e)
 {
     tabs.Add(ErrorTab.Create("Kitty Theme", e.Message));
 }
+try
+{
+    tabs.Add(McpServerTab.Create(repoRoot, home));
+}
+catch (Exception e)
+{
+    tabs.Add(ErrorTab.Create("MCP Server", e.Message));
+}
 tabs.Add(SetupTab.Create(repoRoot, app));
 
 var hint = new Label

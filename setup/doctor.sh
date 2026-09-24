@@ -399,6 +399,36 @@ else
   report "node version mgr" 0 "" "./setup/setup.sh -> node module  (tj/n on Linux/macOS/WSL; nvm-windows on native Windows)"
 fi
 
+# ---------------------------------------------------------------- AI agent tools
+# Optional/opt-in: ./setup/setup.sh -> ai-agents module (never pre-selected there either).
+section "AI agent tools (optional)"
+if have pi; then
+  report pi 1 "$(pi --version 2>&1 | first_line)  ($(command -v pi))"
+else
+  report pi 0 "" "./setup/setup.sh -> ai-agents module ('pi-install' step)"
+fi
+MCP_DIR="$REPO_ROOT/apps/mcp-server"
+if [ -d "$MCP_DIR/node_modules/@modelcontextprotocol/sdk" ]; then
+  report "mcp server" 1 "$MCP_DIR"
+else
+  report "mcp server" 0 "" "./setup/setup.sh -> ai-agents module ('mcp-server-install' step)"
+fi
+PI_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+if [ -f "$PI_AGENT_DIR/mcp.json" ] && grep -q "$MCP_DIR/server.mjs" "$PI_AGENT_DIR/mcp.json" 2>/dev/null; then
+  report "mcp -> pi" 1 "$PI_AGENT_DIR/mcp.json"
+else
+  report "mcp -> pi" 0 "" "./setup/setup.sh -> ai-agents module ('mcp-pi-wire' step)"
+fi
+# local/pi-custom is git-ignored, so a fresh clone legitimately has nothing there: only flag files that aren't linked.
+for f in "$REPO_ROOT"/local/pi-custom/*.ts; do
+  [ -e "$f" ] || continue
+  if [ "$PI_AGENT_DIR/extensions/$(basename "$f")" -ef "$f" ]; then
+    report "pi ext $(basename "$f")" 1 "linked from local/pi-custom"
+  else
+    report "pi ext $(basename "$f")" 0 "" "./setup/setup.sh -> ai-agents module ('pi-custom-extensions' step)"
+  fi
+done
+
 # ---------------------------------------------------------------- GUI apps
 # Apps can come from many places: PATH, flatpak, snap, /Applications, AppImage, Program Files.
 check_app() {
