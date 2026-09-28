@@ -152,7 +152,7 @@ default with no config needed.
 
 **Module `lazyvim-dev`** (needs the `neovim` module's LazyVim install first): language tooling for
 React/TypeScript/modern JS, C#, PowerShell, Python, Bash and SQL. Enables LazyVim's official
-`lang.typescript`/`json`/`python`/`dotnet`/`sql` extras by editing `~/.config/nvim/lazyvim.json`
+`lang.typescript`/`json`/`python`/`dotnet`/`sql`/`markdown` extras by editing `~/.config/nvim/lazyvim.json`
 directly (same file `:LazyExtras` writes -- works headlessly); installs node + PowerShell
 (`pwsh`) as the runtimes those LSPs need; and, since **Bash and PowerShell have no official
 LazyVim extra** (checked the actual extras listing, not guessed), deploys a small custom plugin
@@ -162,7 +162,10 @@ install -- so that's the database answer for MSSQL/Postgres/Mongo/Azure SQL; a
 `lazyvim-dadbod` step adds a connections template (`~/.config/nvim/lua/plugins/dadbod-connections.lua`,
 outside this repo, safe for real credentials) with commented example URLs for each. For merge
 conflicts, lazygit's own inline resolver (already installed by `extras`) is the answer; nothing
-extra to set up there.
+extra to set up there. `lang.markdown` brings the **marksman** LSP (installed by mason, no sudo),
+markdownlint-cli2, markdown-toc, markdown-preview.nvim (`<leader>cp`) and render-markdown.nvim; the
+`obsidian` module's `vault-marksman` step also drops a `.marksman.toml` in the vault so `[[wiki-links]]`
+complete by file name like Obsidian's own.
 
 ## Config (`config/`)
 

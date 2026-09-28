@@ -1,5 +1,9 @@
 // Plugin discovery/loading. A plugin is a directory holding index.mjs whose default export is
-//   { name?, description, tools: [{ name, description, inputSchema?: zodShape, handler(args, ctx) }] }
+//   { name?, description, tools: [{ name, description, groups?: string[], inputSchema?: zodShape, handler(args, ctx) }] }
+// `groups` (default: [pluginName] if omitted) is the group-toggle tag config.mjs's
+// disabledGroups/enabledTools/disabledTools filter on -- a tool can belong to more than one, e.g.
+// a local-only device-specific tool might tag itself ["network", "some-device-name"] so it's
+// covered by both a broad "turn off all network tools" and a narrow "turn off just that device".
 // Built-ins live in ../plugins/, private ones in the configured localPluginDir (default
 // <repo>/local/mcp-plugins, git-ignored). A local plugin shadows a built-in of the same name.
 import fs from "node:fs";

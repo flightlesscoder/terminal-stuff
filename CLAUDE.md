@@ -149,6 +149,16 @@ a mason install in the same process -- a newly-installed extra's `opts()` (which
 mason-tool-installer's `ensure_installed`, e.g. lang.sql's own `sqlfluff`) isn't reliably merged
 yet in the same process that just ran the sync.
 
+**LSP servers a LazyVim extra declares under lspconfig `servers` (e.g. `lang.markdown`'s `marksman`) are NOT
+installed by `+MasonToolsInstall`** -- mason-lspconfig only installs them lazily, the first time a matching
+filetype opens, which never happens under `nvim --headless`. Hit for real: after enabling `lang.markdown`, the
+sync step finished with `markdownlint-cli2`/`markdown-toc` (real mason-tool-installer entries) present but
+`marksman` missing. `lazyvim_dev.py`'s `MASON_LSP` tuple is the explicit `+MasonInstall` list for these; add to it
+(not `MASON_TOOLS`) when enabling another extra whose server isn't otherwise installed. Verified with a scratch
+`HOME`: marksman attaches to a vault note and flags only a genuinely missing `[[wiki-link]]`. The vault's
+`.marksman.toml` (`obsidian.py`'s `vault-marksman`) sets `title_from_heading = false` + `wiki.style = "file-stem"`
+because Obsidian links by file name.
+
 ## Background work in hub (`SetupTab.cs`'s Task.Run + app.Invoke)
 
 **The static `Application.Invoke(Action)` does not reliably marshal work back to the UI thread in

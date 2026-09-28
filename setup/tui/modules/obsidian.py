@@ -104,6 +104,17 @@ PLUGINS = {
     "terminal": ("polyipseity/obsidian-terminal", "3.15.1"),
 }
 
+# Project config for the marksman LSP (LazyVim's lang.markdown extra, see lazyvim_dev.py), read from
+# the vault root. Only the options that differ from marksman's defaults (Tests/default.marksman.toml
+# upstream): Obsidian links by file name ("newLinkFormat": "shortest" above), not by "# Title"
+# heading, so wiki-links should complete/rename as file stems.
+MARKSMAN_TOML = """[core]
+title_from_heading = false
+
+[completion]
+wiki.style = "file-stem"
+"""
+
 
 def obsidian_dir(ctx: Ctx) -> Path:
     return VAULT_DIR(ctx) / ".obsidian"
@@ -224,6 +235,23 @@ def settings_run(ctx: Ctx) -> str:
     return f"wrote {', '.join(written)}" if written else "all settings files already present"
 
 
+# ------------------------------------------------------------------ marksman config (.marksman.toml)
+
+def marksman_check(ctx: Ctx) -> Tuple[bool, str]:
+    p = VAULT_DIR(ctx) / ".marksman.toml"
+    return p.is_file(), str(p)
+
+
+def marksman_run(ctx: Ctx) -> str:
+    p = VAULT_DIR(ctx) / ".marksman.toml"
+    if p.is_file():
+        return f"already exists: {p}"
+    if not ctx.dry_run and not VAULT_DIR(ctx).is_dir():
+        raise StepError("vault isn't set up yet; run the 'vault-git-init' step first")
+    ctx.write_text(p, MARKSMAN_TOML)
+    return f"created {p}"
+
+
 # ------------------------------------------------------------------ theme (Royal Velvet)
 
 def theme_dir(ctx: Ctx) -> Path:
@@ -339,6 +367,7 @@ def vault_probe(ctx: Ctx) -> Tuple[bool, str]:
     checks = [
         ("git (main+working, gitignore/gitattributes)", git_check(ctx)[0]),
         ("vault settings (app/appearance/core/community json)", settings_check(ctx)[0]),
+        (".marksman.toml", marksman_check(ctx)[0]),
         (f"theme ({THEME_NAME})", theme_check(ctx)[0]),
         ("community plugins (pinned versions)", plugins_check(ctx)[0]),
         ("UbuntuMono Nerd Font", ubuntu_font_check(ctx)[0]),
@@ -373,6 +402,10 @@ def build() -> Module:
           "Write .obsidian/app.json, appearance.json, core-plugins.json, community-plugins.json. Needs the "
           "'working' branch checked out (run 'vault-git-init' first). Never overwrites a file that already exists.",
           settings_check, settings_run, supported=unix_only),
+        S("vault-marksman", "Vault: marksman config (.marksman.toml)", "Write .marksman.toml at the vault root so "
+          "the marksman markdown LSP (LazyVim's lang.markdown extra) treats [[wiki-links]] like Obsidian does: "
+          "completed and renamed by file name, not by '# Title' heading. Never overwrites an existing file.",
+          marksman_check, marksman_run, supported=unix_only),
         S("vault-theme-install", f"Vault: install {THEME_NAME} theme", f"Download the {THEME_NAME} theme "
           f"({THEME_REPO}) into .obsidian/themes/{THEME_NAME}/.", theme_check, theme_run, supported=unix_only),
         S("vault-plugins-install", "Vault: install community plugins (pinned versions)",
@@ -384,6 +417,6 @@ def build() -> Module:
           "release) into ~/.local/share/fonts (~/Library/Fonts on macOS) and refresh the font cache. No sudo.",
           ubuntu_font_check, ubuntu_font_run, supported=unix_only),
         S("vault-verify", "Verify vault setup", "Read-only: git branches/gitignore/gitattributes, settings "
-          "files, theme, plugin versions, and the font are all in place.",
+          "files, .marksman.toml, theme, plugin versions, and the font are all in place.",
           lambda ctx: vault_probe(ctx), vault_verify, supported=unix_only),
     ])

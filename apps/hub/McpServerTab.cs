@@ -18,7 +18,7 @@ namespace Hub;
 /// server's own discovery rules.</summary>
 internal static class McpServerTab
 {
-    record ToolInfo(string Name, string Description);
+    record ToolInfo(string Name, string Description, List<string> Groups, bool Enabled);
     record PluginInfo(string Name, string Source, string Description, string? Error, List<ToolInfo> Tools);
 
     public static View Create(string repoRoot, string home)
@@ -56,7 +56,13 @@ internal static class McpServerTab
             sb.AppendLine().AppendLine(p.Description);
             if (p.Error is not null) sb.AppendLine().AppendLine($"LOAD ERROR: {p.Error}");
             sb.AppendLine().AppendLine($"Tools ({p.Tools.Count}):");
-            foreach (var t in p.Tools) sb.AppendLine($"  {t.Name}");
+            foreach (var t in p.Tools)
+            {
+                var groups = t.Groups.Count > 0 ? $" [{string.Join(", ", t.Groups)}]" : "";
+                sb.AppendLine($"  {(t.Enabled ? "x" : " ")} {t.Name}{groups}");
+            }
+            if (p.Tools.Any(t => !t.Enabled))
+                sb.AppendLine().AppendLine("Some tools are off via mcp.disabledGroups/disabledTools -- edit config.jsonc or TS_MCP_* env vars (see apps/mcp-server/README.md); not yet editable from this tab.");
             detail.Text = sb.ToString();
         }
 
@@ -115,12 +121,17 @@ internal static class McpServerTab
         var plugins = new List<PluginInfo>();
         var on = new List<string>();
         using var doc = JsonDocument.Parse(stdout);
-        foreach (var p in doc.RootElement.EnumerateArray())
+        foreach (var p in doc.RootElement.GetProperty("plugins").EnumerateArray())
         {
             var name = p.GetProperty("name").GetString() ?? "";
             if (p.GetProperty("enabled").GetBoolean()) on.Add(name);
             var tools = p.GetProperty("tools").EnumerateArray()
-                .Select(t => new ToolInfo(t.GetProperty("name").GetString() ?? "", t.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "")).ToList();
+                .Select(t => new ToolInfo(
+                    t.GetProperty("name").GetString() ?? "",
+                    t.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+                    t.TryGetProperty("groups", out var g) ? g.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : new List<string>(),
+                    !t.TryGetProperty("enabled", out var en) || en.GetBoolean()))
+                .ToList();
             plugins.Add(new PluginInfo(name, p.GetProperty("source").GetString() ?? "",
                 p.TryGetProperty("description", out var desc) ? desc.GetString() ?? "" : "",
                 p.TryGetProperty("error", out var err) ? err.GetString() : null, tools));

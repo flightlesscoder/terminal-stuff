@@ -2,7 +2,7 @@
 modern JS, C#, PowerShell, Python, Bash and SQL.
 
 LazyVim ships official "extras" (LSP + treesitter + formatter/linter, one `:LazyExtras` toggle)
-for typescript, json, python, dotnet (C#) and sql -- enabled here by editing the state file
+for typescript, json, python, dotnet (C#), sql and markdown -- enabled here by editing the state file
 LazyVim itself reads (~/.config/nvim/lazyvim.json), so it works headlessly, no editor UI needed.
 Bash and PowerShell have NO official extra (checked the actual repo listing, not guessing --
 lua/lazyvim/plugins/extras/lang/ has no bash.lua or powershell.lua); those get a small custom
@@ -19,7 +19,8 @@ from ._common import pkg_run, pm_sudo, unix_only
 from .neovim import NVIM_HEADLESS_ENV, config_dir, lock_summary
 
 # Official LazyVim extras covering: React/TS/modern JS, JSON (package.json/tsconfig), Python,
-# C# (dotnet), SQL. Exact names confirmed against github.com/LazyVim/LazyVim's
+# C# (dotnet), SQL, Markdown (lang.markdown = marksman LSP + markdownlint-cli2 + markdown-toc +
+# markdown-preview.nvim + render-markdown.nvim). Exact names confirmed against github.com/LazyVim/LazyVim's
 # lua/lazyvim/plugins/extras/lang/ listing, not guessed.
 EXTRAS = [
     "lazyvim.plugins.extras.lang.typescript",
@@ -27,6 +28,7 @@ EXTRAS = [
     "lazyvim.plugins.extras.lang.python",
     "lazyvim.plugins.extras.lang.dotnet",
     "lazyvim.plugins.extras.lang.sql",
+    "lazyvim.plugins.extras.lang.markdown",
 ]
 # lazyvim.json's own schema version (lua/lazyvim/config/init.lua: M.json.version). MUST be written
 # whenever we touch this file: with no "version" key, LazyVim treats it as the ancient v0 format
@@ -38,7 +40,12 @@ EXTRAS = [
 LAZYVIM_JSON_VERSION = 8
 EXTRA_LANGS_FILE = "extra-langs.lua"                  # dotfiles/nvim/<this> -> lua/plugins/<this>
 DADBOD_FILE = "dadbod-connections.lua"                # same deploy pattern
-MASON_TOOLS = ("bash-language-server", "powershell-editor-services")
+MASON_TOOLS = ("bash-language-server", "powershell-editor-services",
+               "markdownlint-cli2", "markdown-toc")
+# LSP servers a LazyVim extra only declares under lspconfig `servers`: mason-lspconfig installs
+# those lazily, the first time a matching filetype opens -- which never happens headlessly (confirmed:
+# lang.markdown's marksman was the one tool missing after a sync). So install them explicitly.
+MASON_LSP = ("marksman",)
 
 
 def lazyvim_json_path(ctx: Ctx) -> Path:
@@ -141,7 +148,7 @@ def plugin_spec_step(filename: str):
 
 def sync_check(ctx: Ctx) -> Tuple[bool, str]:
     mason = ctx.home / ".local" / "share" / "nvim" / "mason" / "packages"
-    missing_tools = [t for t in MASON_TOOLS if not (mason / t).is_dir()]
+    missing_tools = [t for t in MASON_TOOLS + MASON_LSP if not (mason / t).is_dir()]
     n, has_lazyvim = lock_summary(ctx)
     if n == 0:
         return False, "plugins not synced yet"
@@ -165,7 +172,7 @@ def sync_run(ctx: Ctx) -> str:
     # aborts them) -- headless mode doesn't pump the event loop the way its internal wait expects.
     # A plain `vim.wait()` does pump it for real, so that's what actually blocks for the installs.
     res = ctx.run(["nvim", "--headless", "-u", str(config_dir(ctx) / "init.lua"), "+MasonToolsInstall",
-                  "-c", "lua vim.wait(45000, function() return false end, 500)", "+qa"],
+                  "+MasonInstall " + " ".join(MASON_LSP), "-c", "lua vim.wait(45000, function() return false end, 500)", "+qa"],
                   env=NVIM_HEADLESS_ENV, check=False, timeout=1800)
     if ctx.dry_run:
         return "would sync plugins + mason tools"
@@ -183,16 +190,16 @@ def build() -> Module:
     dadbod_check, dadbod_run = plugin_spec_step(DADBOD_FILE)
     S = Step
     return Module("lazyvim-dev", "LazyVim: dev languages",
-                  "React/TypeScript/modern JS, C#, PowerShell, Python, Bash, SQL -- on top of the "
+                  "React/TypeScript/modern JS, C#, PowerShell, Python, Bash, SQL, Markdown -- on top of the "
                   "neovim module's LazyVim install.", [
         S("lazyvim-langtools", "Install node + PowerShell", "Runtimes the LSPs below need: node/npm (vtsls and friends) and pwsh (powershell_es is a PowerShell script, not a standalone binary). brew where available.",
           langtools_check, langtools_run, pm_sudo, unix_only),
-        S("lazyvim-extras", "Enable LazyVim lang extras", "typescript, json, python, dotnet (C#), sql -- edits ~/.config/nvim/lazyvim.json's extras list directly (same thing :LazyExtras writes), so it works headlessly. sql pulls in vim-dadbod + vim-dadbod-ui automatically -- LazyVim's own official answer for database support (checked: no separate community extra needed).",
+        S("lazyvim-extras", "Enable LazyVim lang extras", "typescript, json, python, dotnet (C#), sql, markdown -- edits ~/.config/nvim/lazyvim.json's extras list directly (same thing :LazyExtras writes), so it works headlessly. sql pulls in vim-dadbod + vim-dadbod-ui automatically -- LazyVim's own official answer for database support (checked: no separate community extra needed). markdown brings the marksman LSP, markdownlint-cli2, markdown-toc, markdown-preview.nvim and render-markdown.nvim.",
           extras_check, extras_run, supported=unix_only),
         S("lazyvim-extra-langs", "Add Bash + PowerShell LSPs", "Neither has an official LazyVim extra. Deploys dotfiles/nvim/extra-langs.lua to ~/.config/nvim/lua/plugins/ (bashls + powershell_es via a plain custom plugin spec). Never overwrites an existing file.",
           extra_langs_check, extra_langs_run, supported=unix_only),
         S("lazyvim-dadbod", "Add dadbod connection template", "Deploys dotfiles/nvim/dadbod-connections.lua to ~/.config/nvim/lua/plugins/ -- a vim.g.dbs template with commented-out example URLs for MSSQL, Azure SQL, Postgres and MongoDB (use $ENV_VAR for passwords, never literal ones). Fill in your real connections there; that file lives outside this repo, so it's never at risk of becoming public. Never overwrites an existing file.",
           dadbod_check, dadbod_run, supported=unix_only),
-        S("lazyvim-dev-sync", "Sync plugins + LSP tools", "Headless `nvim +Lazy! sync +MasonToolsInstallSync`: installs the new extras' plugins and every LSP/formatter they need, including bash-language-server and powershell-editor-services. Network, can take a few minutes.",
+        S("lazyvim-dev-sync", "Sync plugins + LSP tools", "Headless `nvim +Lazy! sync +MasonToolsInstallSync`: installs the new extras' plugins and every LSP/formatter they need, including bash-language-server, powershell-editor-services and marksman. Network, can take a few minutes.",
           sync_check, sync_run, supported=unix_only),
     ])

@@ -32,9 +32,20 @@
   // ones in localPluginDir). Edit from the hub app's MCP Server tab; it writes this as {"$replace":
   // [...]} in your own config so a removal really removes. pluginOptions is passed to a plugin as
   // ctx.options, keyed by plugin name.
+  //
+  // Finer-grained toggles, system-wide default: disabledGroups turns off every tool tagged with any
+  // of these groups (a tool can carry more than one, see a plugin's own tools list); disabledTools/
+  // enabledTools name individual tools as "<plugin>_<tool>" (disabledTools always wins). presets are
+  // named overlays of the same three fields, selected per-session (not edited here) by launching the
+  // server with TS_MCP_PRESET=<name> -- see apps/mcp-server/lib/config.mjs for the full resolution
+  // order and the raw TS_MCP_DISABLED_GROUPS/_ENABLED_TOOLS/_DISABLED_TOOLS env-var escape hatch.
   "mcp": {
     "enabledPlugins": ["repo"],
     "localPluginDir": "${REPO}/local/mcp-plugins",
-    "pluginOptions": {}
+    "pluginOptions": {},
+    "disabledGroups": [],
+    "enabledTools": [],
+    "disabledTools": [],
+    "presets": {}
   }
 }
